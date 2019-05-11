@@ -16,12 +16,21 @@ pd.options.display.max_columns = 30
 data = pd.read_csv("data/Predict.csv",  error_bad_lines=False)
 orig_data  = pd.read_csv("original-data/StG108.2017.code_data_reexecuted.csv",  error_bad_lines=False)
 data = data.sort_values(['SubjectID', 'ProblemID'], ascending=[1,1]).reset_index(drop=True)
-# student = 1
-data = pd.read_csv("data/Predict.csv",  error_bad_lines=False)
-data_group = data
-cur_problem = 4
-groupname = 'failure'
-cv_fold = 0
+
+
+
+
+def runme():
+    data = pd.read_csv("data/Predict.csv", error_bad_lines=False)
+    data = data.sort_values(['SubjectID', 'ProblemID'], ascending=[1, 1]).reset_index(drop=True)
+    data_group = data
+    cur_problem = 92
+    groups = ['success', 'failure']
+    for groupname in groups:
+        get_student_pattern_per_problem(data_group, cur_problem, groupname)
+        sequence_mining(cur_problem, groupname)
+    get_featured_patterns(cur_problem)
+
 def get_student_pattern_per_problem(data_group, cur_problem, groupname):
     # O(nsp), 1 min for 193 students (30655 patterns)
     start = time.time()
@@ -82,18 +91,21 @@ def get_featured_patterns(cur_problem):
     pattern_success, pattern_both_success, pattern_failure, pattern_both_failure = pd.DataFrame(columns=colnames), pd.DataFrame(columns=colnames), pd.DataFrame(columns=colnames), pd.DataFrame(columns=colnames)
     for pattern in success_statistics.index:
         if pattern not in failure_statistics.index:
-            continue
+            failure_s_support, failure_total_student = 0, failure_statistics['TotalStudent'][0]
+            failure_i_support, failure_i_support_variance = 0, 0
+        else:
+            failure_s_support = failure_statistics.at[pattern, 'SSupport']
+            failure_total_student = failure_statistics.at[pattern, 'TotalStudent']
+            failure_i_support = failure_statistics.at[pattern, 'ISupport']
+            failure_i_support_variance = failure_statistics.at[pattern, 'ISupportVariance']
         success_s_support = success_statistics.at[pattern, 'SSupport']
         success_total_student = success_statistics.at[pattern, 'TotalStudent']
 
-        failure_s_support = failure_statistics.at[pattern, 'SSupport']
-        failure_total_student = failure_statistics.at[pattern, 'TotalStudent']
         if success_s_support < 0.4* success_total_student and failure_s_support < 0.4* failure_total_student:
             continue
         success_i_support = success_statistics.at[pattern, 'ISupport']
         success_i_support_variance = success_statistics.at[pattern, 'ISupportVariance']
-        failure_i_support = failure_statistics.at[pattern, 'ISupport']
-        failure_i_support_variance = failure_statistics.at[pattern, 'ISupportVariance']
+
         pvalue = t_test(success_i_support, failure_i_support,success_i_support_variance, failure_i_support_variance,
                   success_total_student, failure_total_student)[2]
         if pvalue > 0.05:

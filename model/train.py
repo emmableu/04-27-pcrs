@@ -4,11 +4,18 @@ train_data = filename + 'Training_orig.csv'
 test_data = filename + 'Test_orig.csv'
 
 
+
+
 data = pd.read_csv("data/Predict.csv",  error_bad_lines=False)
 data_group = data
+
+import os
+os.mkdir('tempDir')
 get_per_problem_patterns(data_group):
     problems = data_group['ProblemID'].unique()
     for problem in problems:
+        dirname = "result/featured-patterns/problem" + str(problem)
+        os.mkdir(dirname)
         print("Problem:", problem)
         problem_data = data_group[(data_group['ProblemID'] == problem)].sort_values('StartOrder', ascending=1).reset_index(drop=True)
         print(len(problem_data.index))
